@@ -11,6 +11,10 @@ use Laravel\Scout\Engines\Engine;
 
 class OpenSearchEngine extends Engine
 {
+    private const FAIL = 'FAIL';
+
+    private const ERROR_PREFIX = 'OpenSearch: ';
+
     private $config;
 
     private $openSearchClient;
@@ -46,22 +50,26 @@ class OpenSearchEngine extends Engine
         $tableName = $models->first()->searchableAs();
 
         $docs = $models->map(function ($model) {
-            $array = $model->toSearchableArray();
+            $fields = $model->toSearchableArray();
 
-            if (empty($array)) {
+            if (empty($fields)) {
                 return;
             }
 
-            $array['cmd'] = 'UPDATE';
+            $doc = [
+                'cmd'    => 'UPDATE',
+                'fields' => $fields,
+            ];
 
-            return $array;
+            return $doc;
         })->filter()->values()->all();
 
-        $docsJson = json_encode($docs);
+        $docs = json_encode($docs);
 
-        if (!empty($docsJson)) {
+        if (!empty($docs)) {
             $documentClient = $this->getDocumentClient();
-            $documentClient->push($docsJson, $appName, $tableName);
+            $result = $documentClient->push($docs, $appName, $tableName);
+            $this->checkResult($result);
         }
     }
 
@@ -106,7 +114,7 @@ class OpenSearchEngine extends Engine
     public function search(Builder $builder)
     {
         return $this->performSearch($builder, array_filter([
-            'numericFilters' => $this->filters($builder),
+            'filter' => $this->filter($builder),
             'hits' => $builder->limit,
         ]));
     }
@@ -122,7 +130,7 @@ class OpenSearchEngine extends Engine
     public function paginate(Builder $builder, $perPage, $page)
     {
         return $this->performSearch($builder, [
-            'numericFilters' => $this->filters($builder),
+            'filter' => $this->filter($builder),
             'hits' => $perPage,
             'start' => $page - 1,
         ]);
@@ -140,10 +148,33 @@ class OpenSearchEngine extends Engine
         $params = new SearchParamsBuilder();
         $params->setAppName($this->config['app_name']);
         $params->setFormat('fulljson');
+        $params->setQuery($builder->query);
+
+        foreach ($options as $key => $value) {
+            switch ($key) {
+                case 'filter':
+                    foreach ($value as $filter) {
+                        $params->addFilter($filter);
+                    }
+
+                    break;
+
+                case 'hits':
+                    $params->setHits($value);
+                    break;
+
+                case 'start':
+                    $params->setStart($value);
+                    break;
+            }
+        }
 
         $searchClient = $this->getSearchClient();
+        $result = $searchClient->execute($params->build());
 
-        $searchClient->execute($params);
+        $this->checkResult($result);
+
+        return $result;
     }
 
     /**
@@ -152,7 +183,7 @@ class OpenSearchEngine extends Engine
      * @param  \Laravel\Scout\Builder  $builder
      * @return array
      */
-    protected function filters(Builder $builder)
+    protected function filter(Builder $builder)
     {
         return collect($builder->wheres)->map(function ($value, $key) {
             return $key.'='.$value;
@@ -167,7 +198,15 @@ class OpenSearchEngine extends Engine
      */
     public function mapIds($results)
     {
+        $results = json_decode($results->result);
+        $items = $results->result->items;
+        $objectIds = [];
 
+        foreach ($items as $item) {
+            $objectIds[] = $item->fields->id;
+        }
+
+        return $objectIds;
     }
 
     /**
@@ -180,7 +219,24 @@ class OpenSearchEngine extends Engine
      */
     public function map(Builder $builder, $results, $model)
     {
+        $results = json_decode($results->result);
 
+        if ($results->result->num === 0) {
+            return $model->newCollection();
+        }
+
+        $items = $results->result->items;
+        $objectIds = [];
+
+        foreach ($items as $item) {
+            $objectIds[] = $item->fields->id;
+        }
+
+        return $model->getScoutModelsByIds(
+            $builder, $objectIds
+        )->filter(function ($model) use ($objectIds) {
+            return in_array($model->getScoutKey(), $objectIds);
+        });
     }
 
     /**
@@ -191,7 +247,9 @@ class OpenSearchEngine extends Engine
      */
     public function getTotalCount($results)
     {
+        $results = json_decode($results->result);
 
+        return $results->result->total;
     }
 
     /**
@@ -202,7 +260,7 @@ class OpenSearchEngine extends Engine
      */
     public function flush($model)
     {
-
+        throw new \Exception(sprintf('Version %s OpenSearch SDK does not support flush operation', OpenSearchClient::SDK_VERSION));
     }
 
     private function getSearchClient()
@@ -225,6 +283,21 @@ class OpenSearchEngine extends Engine
         $this->documentClient = new DocumentClient($this->openSearchClient);
 
         return $this->documentClient;
+    }
+
+    private function checkResult($result)
+    {
+        $originalResult = $result;
+        $result = json_decode($result->result);
+
+        if ($result->status == self::FAIL) {
+            $error = $result->errors[0];
+
+            throw new \Exception(
+                self::ERROR_PREFIX . $error->message . PHP_EOL . 'orignal result: ' . $originalResult->result . PHP_EOL . 'traceInfo: ' . $originalResult->traceInfo,
+                $error->code
+            );
+        }
     }
 
 }
