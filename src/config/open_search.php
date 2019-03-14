@@ -12,15 +12,15 @@ return [
     */
 
     // 指定您的accessKeyId，在 https://ak-console.aliyun.com/#/accesskey 中可以创建
-    'access_key_id' => 'LTAIMUa3rlnbKkaw',
+    'access_key_id' => '',
 
     // 指定您的secret
-    'secret'        => '6sx63moRgy1a7Me0GWnb3gBRZ0zzdi',
+    'secret'        => '',
 
     // 指定您要访问的区域的endPoint，在控制台应用详情页中有指定
-    'end_point'     => 'http://opensearch-cn-shenzhen.aliyuncs.com',
-    'app_name'      => 'test_search',
-    'suggest_name'  => 'test_suggest_name',
+    'end_point'     => '',
+    'app_name'      => '',
+    'suggest_name'  => '',
     'options'       => [
         'debug' => false,    // 是否开启debug模式（默认不开启)
         'gzip' => false,    // 是否开启gzip压缩（默认开启）
