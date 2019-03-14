@@ -1,54 +1,52 @@
 # Laravel OpenSearch
 
-[中文说明](https://github.com/homesheer/laravel-opensearch/blob/master/README_CN.md)
-
 [![For Laravel 5](https://img.shields.io/badge/laravel-5.*-green.svg)](https://github.com/laravel/laravel)
 [![For Lumen 5](https://img.shields.io/badge/lumen-5.*-green.svg)](https://github.com/laravel/lumen)
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/homesheer/laravel-opensearch.svg)](https://packagist.org/packages/homesheer/laravel-opensearch)
 [![Total Downloads](https://img.shields.io/packagist/dt/homesheer/laravel-opensearch.svg)](https://packagist.org/packages/homesheer/laravel-opensearch)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
 
-## Introduction
+## 介绍
 
 
-## Requirements
-This package requires Laravel 5.4 or newer.
+## 要求
+`Laravel 5.4`或更新的版本
 
-## Installation
+## 安装
 
-You can install the package via Composer:
+使用`Composer`:
 
 ``` bash
 composer require homesheer/laravel-opensearch
 ```
 
-You can publish the config file with:
+发布配置文件:
 
 ```bash
 php artisan vendor:publish --provider="HomeSheer\OpenSearch\OpenSearchServiceProvider" --tag="config"
 ```
 
-For Laravel 5.4 or older:
+`Laravel 5.4`或更低的版本:
 
 ```php
 // config/app.php
 HomeSheer\OpenSearch\OpenSearchServiceProvider::class,
 ```
 
-For Lumen:
+Lumen:
 
 ```php
 // bootstrap/app.php
-$app->register(HomeSheer\OpenSearch\OpenSearchProvider::class);
+$app->register(HomeSheer\OpenSearch\OpenSearchServiceProvider::class);
 ```
 
-## Usage
+## 用法
 
     
-## Contributing
+## 贡献
 
-Contributions are welcome, [thanks to y'all](https://github.com/homesheer/laravel-opensearch/graphs/contributors) :)
+欢迎参与贡献, [致谢这些贡献者](https://github.com/homesheer/laravel-opensearch/graphs/contributors) :)
 
-## License
+## 许可证
 
-Laravel Assembler is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT).
+Laravel Assembler 使用 [MIT 许可证](http://opensource.org/licenses/MIT) 开源.
