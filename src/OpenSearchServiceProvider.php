@@ -2,7 +2,9 @@
 
 namespace HomeSheer\OpenSearch;
 
-class OpenSearchServiceProvider
+use Illuminate\Support\ServiceProvider;
+
+class OpenSearchServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap the application events.
